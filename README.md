@@ -13,6 +13,8 @@
 
 *Best Practice Research Project - Metode Penelitian*
 
+🌐 **Web Version:** [personalhealthai.netlify.app](https://personalhealthai.netlify.app/)
+
 </div>
 
 ---
@@ -796,6 +798,18 @@ useEffect(() => {
    - Performance benchmarking
    - Accuracy validation
    - User satisfaction survey
+
+### 🏆 Sertifikat Penghargaan
+
+Paper penelitian ini telah mendapatkan penghargaan **Paper Terbaik** pada kegiatan **Seminar Nasional Teknologi Informasi, Mekatronika dan Ilmu Komputer (SENTIMETER) 2026**.
+
+<div align="center">
+
+![Sertifikat Paper Terbaik](./assets/certificate.png)
+
+*Sertifikat Penghargaan Paper Terbaik - SENTIMETER 2026*
+
+</div>
 
 ---
 
