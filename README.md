@@ -283,11 +283,43 @@ Mayoritas masyarakat Indonesia, terutama yang bukan dari background kesehatan at
 
 ---
 
+## 📱 System Interface & User Experience
+
+Berikut adalah tampilan antarmuka **Onboarding System** yang dirancang dengan pendekatan *Neural & Futuristic Design* untuk memberikan kesan profesional dan canggih sejak pertama kali pengguna membuka aplikasi.
+
+| **System Intro** | **Adaptive Protocols** |
+|:---:|:---:|
+| <img src="assets/readme/onboarding_1.jpg" width="280" /> | <img src="assets/readme/onboarding_2.jpg" width="280" /> |
+| **Precision Tracking** | **Real-time Evolution** |
+
+| **AI Neural Analysis** | **Ecosystem Dashboard** |
+|:---:|:---:|
+| <img src="assets/readme/onboarding_3.jpg" width="280" /> | <img src="assets/readme/onboarding_4.jpg" width="280" /> |
+| **Biometric Scanning** | **Smart Wellness Companion** |
+
+---
+
+## 🔐 Authentication & Security
+
+Modul otentikasi menggunakan **Firebase Auth** yang diamankan dengan enkripsi standar industri. Antarmuka didesain untuk memberikan rasa aman dan kepercayaan.
+
+| **Secure Login Access** | **Profile Creation** |
+|:---:|:---:|
+| <img src="assets/readme/auth_login.jpg" width="280" /> | <img src="assets/readme/auth_register.jpg" width="280" /> |
+| **Encrypted Gateway** | **Identity Initialization** |
+
+---
+
 ## ✨ Fitur Utama
 
 ### 🏠 Hub (Dashboard)
 
 Dashboard utama yang menampilkan overview kesehatan harian dengan design modern dan informatif.
+
+| **Main Dashboard** | **Guest / Empty State** |
+|:---:|:---:|
+| <img src="assets/readme/hub_main.jpg" width="280" /> | <img src="assets/readme/hub_guest.jpg" width="280" /> |
+| **Complete Health Overview** | **Zero-State Experience** |
 
 **Components:**
 | Component | Fungsi |
@@ -308,6 +340,11 @@ Dashboard utama yang menampilkan overview kesehatan harian dengan design modern 
 ### 🔍 Food Search Engine
 
 Sistem pencarian makanan hybrid yang menggabungkan local database dan AI.
+
+| **AI Search Interface** | **Contextual Results** |
+|:---:|:---:|
+| <img src="assets/readme/search_main.jpg" width="280" /> | *Local + AI Results* |
+| **Smart Input** | **Hybrid Engine** |
 
 **Search Flow:**
 ```
@@ -346,6 +383,11 @@ Result: Display AI-generated result
 
 Sistem meal planning yang comprehensive dengan AI integration.
 
+| **Daily Summary** | **Target Selection** | **Detailed Meal List** |
+|:---:|:---:|:---:|
+| <img src="assets/readme/nutrition_summary.jpg" width="230" /> | <img src="assets/readme/nutrition_target.jpg" width="230" /> | <img src="assets/readme/nutrition_list.jpg" width="230" /> |
+| **Macro Analysis** | **Goal Adaptation** | **Food Tracking** |
+
 **Meal Categories:**
 - 🌅 Breakfast (Sarapan)
 - 🌞 Lunch (Makan Siang)
@@ -380,6 +422,11 @@ AI Output:
 
 Modul latihan untuk tracking workout sessions.
 
+| **Workout Protocols** | **Specific Module** |
+|:---:|:---:|
+| <img src="assets/readme/training_modules.jpg" width="280" /> | <img src="assets/readme/training_list.jpg" width="280" /> |
+| **Gym & Home Modes** | **Targeted Training** |
+
 **Workout Types:**
 - 🏠 Home Workout
 - 🏋️ Gym Workout
@@ -397,6 +444,11 @@ Modul latihan untuk tracking workout sessions.
 ### 👤 Profile & Settings
 
 Manajemen profil pengguna dan pengaturan aplikasi.
+
+| **Neural Profile** | **Vital Statistics** |
+|:---:|:---:|
+| <img src="assets/readme/profile_main.jpg" width="280" /> | *Integrated Stats* |
+| **User Identity** | **Health Data** |
 
 **Profile Data:**
 - Personal info (nama, umur, gender)
