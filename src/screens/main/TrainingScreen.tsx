@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import LottieView from "lottie-react-native";
 import {
     Dumbbell,
     Home,
@@ -23,6 +24,20 @@ import {
 } from "lucide-react-native";
 
 // --- Data Constants ---
+const ANIMATION_MAP: Record<string, any> = {
+    "h1": require("../../animations/JumpingJack.json"),
+    "h2": require("../../animations/Military Push Ups.json"),
+    "h3": require("../../animations/squat.json"),
+    "h4": require("../../animations/Burpee.json"),
+    "h5": require("../../animations/plank.json"),
+    "s1": require("../../animations/Lunge.json"),
+    "s2": require("../../animations/Military Push Ups.json"), // Fallback
+    "s3": require("../../animations/glutebridge.json"),
+    "s4": require("../../animations/superman.json"),
+    "c1": require("../../animations/Crunches.json"),
+    "c2": require("../../animations/situp.json"), // Assuming close enough
+    "c3": require("../../animations/plank.json"),
+};
 
 const HOME_CATEGORIES = [
     {
@@ -111,11 +126,13 @@ const GYM_CATEGORIES = [
 // --- Components ---
 
 const WorkoutSessionOverlay = ({ exercise, onClose }: { exercise: any; onClose: () => void }) => {
+    const animSource = ANIMATION_MAP[exercise.id];
     const [phase, setPhase] = useState<"countdown" | "active" | "rest">("countdown");
     const [countdown, setCountdown] = useState(3);
     const [timer, setTimer] = useState(0);
     const [currentSet, setCurrentSet] = useState(1);
     const [isPaused, setIsPaused] = useState(false);
+    const animation = useRef<LottieView>(null);
 
     useEffect(() => {
         if (phase === "countdown") {
@@ -124,9 +141,22 @@ const WorkoutSessionOverlay = ({ exercise, onClose }: { exercise: any; onClose: 
                 return () => clearTimeout(t);
             } else {
                 setPhase("active");
+                if (animation.current) {
+                    animation.current.play();
+                }
             }
         }
     }, [countdown, phase]);
+
+    useEffect(() => {
+        if (animation.current) {
+            if (isPaused) {
+                animation.current.pause();
+            } else if (phase === 'active') {
+                animation.current.play();
+            }
+        }
+    }, [isPaused, phase]);
 
     useEffect(() => {
         let interval: any;
@@ -168,60 +198,86 @@ const WorkoutSessionOverlay = ({ exercise, onClose }: { exercise: any; onClose: 
 
                 <SafeAreaView className="flex-1">
                     {/* Header */}
-                    <View className="flex-row items-center justify-between p-6 border-b border-white/10 bg-slate-900/50">
+                    <View className="flex-row items-center justify-between p-6 border-b border-white/10 bg-slate-900/50 backdrop-blur-md">
                         <View className="flex-row items-center gap-4">
-                            <View className="p-2 bg-cyan-500/20 rounded-lg border border-cyan-500/50">
+                            <View className="p-2 bg-cyan-500/20 rounded-lg border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
                                 <Activity size={24} color="#22d3ee" />
                             </View>
                             <View>
-                                <Text className="text-xl font-black text-white">{exercise.name}</Text>
-                                <Text className="text-xs text-cyan-400 font-bold tracking-widest">SESSION ACTIVE</Text>
+                                <Text className="text-xl font-black text-white tracking-tight">{exercise.name}</Text>
+                                <Text className="text-xs text-cyan-400 font-bold uppercase shadow-cyan-500/50">SESSION ACTIVE</Text>
                             </View>
                         </View>
-                        <TouchableOpacity onPress={onClose} className="p-2 rounded-full bg-slate-800">
-                            <X size={24} color="white" />
+                        <TouchableOpacity onPress={onClose} className="w-10 h-10 items-center justify-center rounded-full bg-slate-800 border border-white/10 active:bg-red-500/20 active:border-red-500/50">
+                            <X size={20} color="white" />
                         </TouchableOpacity>
                     </View>
 
                     {/* Content */}
-                    <View className="flex-1 items-center justify-center p-6">
+                    <View className="flex-1 items-center justify-start p-6 pt-6 pb-32">
                         {phase === "countdown" && (
-                            <View className="absolute inset-0 z-50 flex items-center justify-center bg-black/80">
-                                <Text className="text-[120px] font-black text-cyan-400">
-                                    {countdown > 0 ? countdown : "GO!"}
-                                </Text>
+                            <View className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl">
+                                <View className="items-center">
+                                    <Text className="text-cyan-500 text-sm font-bold mb-4 uppercase">Get Ready</Text>
+                                    <Text className="text-[120px] font-black text-white leading-none shadow-[0_0_30px_rgba(34,211,238,0.5)]">
+                                        {countdown > 0 ? countdown : "GO!"}
+                                    </Text>
+                                </View>
                             </View>
                         )}
 
                         {/* Exercise Illustration Placeholder */}
-                        <View className="w-full aspect-square bg-slate-900/50 overflow-hidden mb-8 items-center justify-center shadow-2xl shadow-cyan-900/20" style={{ borderRadius: 40 }}>
-                            <Image
-                                source={{ uri: `https://placehold.co/600x600/0f172a/22d3ee?text=${encodeURIComponent(exercise.name)}` }}
-                                className="w-full h-full opacity-80"
-                                resizeMode="cover"
-                            />
-                            {/* Overlay UI */}
-                            <View className="absolute top-6 left-6 w-6 h-6 border-l-2 border-t-2 border-cyan-400" />
-                            <View className="absolute top-6 right-6 w-6 h-6 border-r-2 border-t-2 border-cyan-400" />
-                            <View className="absolute bottom-6 left-6 w-6 h-6 border-l-2 border-b-2 border-cyan-400" />
-                            <View className="absolute bottom-6 right-6 w-6 h-6 border-r-2 border-b-2 border-cyan-400" />
+                        <View className="w-full h-56 bg-slate-900/50 overflow-hidden mb-8 items-center justify-center shadow-2xl shadow-cyan-900/20 border border-white/5 relative" style={{ borderRadius: 24 }}>
+                            {animSource ? (
+                                <LottieView
+                                    ref={animation}
+                                    source={animSource}
+                                    style={{ width: '100%', height: '100%' }}
+                                    autoPlay={false}
+                                    loop
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={{ uri: `https://placehold.co/600x600/0f172a/22d3ee?text=${encodeURIComponent(exercise.name)}` }}
+                                        className="w-full h-full opacity-60"
+                                        resizeMode="cover"
+                                    />
+                                    {/* "Video" Play icon overlay to simulate video player */}
+                                    <View className="absolute inset-0 items-center justify-center">
+                                        <View className="w-20 h-20 rounded-full bg-cyan-500/20 border border-cyan-400/50 items-center justify-center backdrop-blur-sm animate-pulse">
+                                            <Activity size={32} color="#22d3ee" />
+                                        </View>
+                                    </View>
+                                </>
+                            )}
+
+                            {/* Tech Corners */}
+                            <View className="absolute top-6 left-6 w-8 h-8 border-l-4 border-t-4 border-cyan-400 rounded-tl-xl opacity-80" />
+                            <View className="absolute top-6 right-6 w-8 h-8 border-r-4 border-t-4 border-cyan-400 rounded-tr-xl opacity-80" />
+                            <View className="absolute bottom-6 left-6 w-8 h-8 border-l-4 border-b-4 border-cyan-400 rounded-bl-xl opacity-80" />
+                            <View className="absolute bottom-6 right-6 w-8 h-8 border-r-4 border-b-4 border-cyan-400 rounded-br-xl opacity-80" />
                         </View>
 
                         {/* Live Timer */}
-                        <View className="bg-slate-900 border border-slate-800 p-6 w-full mb-6 items-center" style={{ borderRadius: 24 }}>
-                            <Text className="text-xs text-cyan-500 font-bold tracking-[0.2em] uppercase mb-2">DURATION</Text>
-                            <Text className="text-7xl font-black text-white font-mono tracking-tighter">{formatTime(timer)}</Text>
+                        <View className="bg-slate-900/80 border border-white/5 p-6 w-full mb-6 items-center shadow-lg" style={{ borderRadius: 24 }}>
+                            <Text className="text-[10px] text-cyan-500 font-bold uppercase mb-1 opacity-80">DURATION</Text>
+                            <Text className="text-7xl font-black text-white font-mono tabular-nums shadow-sm">{formatTime(timer)}</Text>
                         </View>
 
                         {/* Stats Grid */}
                         <View className="flex-row gap-4 w-full mb-8">
-                            <View className="flex-1 bg-slate-900 border border-slate-800 p-4 items-center" style={{ borderRadius: 20 }}>
-                                <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">SET</Text>
-                                <Text className="text-2xl font-black text-white">{currentSet} <Text className="text-sm font-bold text-slate-500">/ {exercise.sets}</Text></Text>
+                            <View className="flex-1 bg-slate-900/80 border border-white/5 p-4 items-center" style={{ borderRadius: 20 }}>
+                                <Text className="text-[10px] text-slate-400 font-bold uppercase mb-2">CURRENT SET</Text>
+                                <View className="flex-row items-baseline">
+                                    <Text className="text-3xl font-black text-white">{currentSet}</Text>
+                                    <Text className="text-sm font-bold text-slate-500 ml-1">/ {exercise.sets}</Text>
+                                </View>
                             </View>
-                            <View className="flex-1 bg-slate-900 border border-slate-800 p-4 items-center" style={{ borderRadius: 20 }}>
-                                <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">TARGET</Text>
-                                <Text className="text-2xl font-black text-white">{exercise.reps}</Text>
+                            <View className="flex-1 bg-slate-900/80 border border-white/5 p-4 items-center" style={{ borderRadius: 20 }}>
+                                <Text className="text-[10px] text-slate-400 font-bold uppercase mb-2">TARGET REPS</Text>
+                                <Text className="text-3xl font-black text-white">{exercise.reps}</Text>
                             </View>
                         </View>
 
@@ -229,20 +285,22 @@ const WorkoutSessionOverlay = ({ exercise, onClose }: { exercise: any; onClose: 
                         <View className="flex-row gap-4 w-full">
                             <TouchableOpacity
                                 onPress={() => setIsPaused(!isPaused)}
-                                className={`flex-1 p-4 flex-row items-center justify-center gap-2 border ${isPaused ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-slate-800 border-white/10'}`}
+                                activeOpacity={0.7}
+                                className={`flex-1 p-4 flex-row items-center justify-center gap-2 border ${isPaused ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-slate-800 border-white/10'}`}
                                 style={{ borderRadius: 20 }}
                             >
                                 {isPaused ? <Play size={20} color={isPaused ? '#eab308' : 'white'} /> : <Pause size={20} color="white" />}
-                                <Text className={`font-bold ${isPaused ? 'text-yellow-400' : 'text-white'}`}>{isPaused ? "RESUME" : "PAUSE"}</Text>
+                                <Text className={`font-black text-sm ${isPaused ? 'text-yellow-400' : 'text-white'}`}>{isPaused ? "RESUME" : "PAUSE"}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={handleFinishSet}
-                                className="flex-1 p-4 flex-row items-center justify-center gap-2 bg-cyan-600 shadow-lg shadow-cyan-500/20"
+                                activeOpacity={0.7}
+                                className="flex-1 p-4 flex-row items-center justify-center gap-2 bg-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.3)] border-t border-white/20"
                                 style={{ borderRadius: 20 }}
                             >
                                 <CheckCircle size={20} color="white" />
-                                <Text className="font-bold text-white">{currentSet === exercise.sets ? "FINISH" : "NEXT SET"}</Text>
+                                <Text className="font-black text-white text-sm">{currentSet === exercise.sets ? "FINISH" : "NEXT SET"}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

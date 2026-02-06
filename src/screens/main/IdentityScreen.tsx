@@ -212,15 +212,15 @@ export const IdentityScreen = () => {
 
     const handleLogout = () => {
         Alert.alert(
-            'Keluar',
-            'Apakah anda yakin akan keluar?',
+            t('profile.logout'),
+            t('profile.logout_confirm'),
             [
                 {
-                    text: 'Tidak',
+                    text: t('profile.logout_no'),
                     style: 'cancel',
                 },
                 {
-                    text: 'Ya, Keluar',
+                    text: t('profile.logout_yes'),
                     style: 'destructive',
                     onPress: () => {
                         logout();
@@ -240,7 +240,7 @@ export const IdentityScreen = () => {
             await setProfile({ ...newProfile, isGuest: false });
             setIsEditing(false);
             setIsEditingProtocols(false);
-            Alert.alert(t('common.save'), 'Profile updated successfully/Profil berhasil diperbarui');
+            Alert.alert(t('common.success'), t('profile.save'));
         } catch (e) { Alert.alert('Error', 'Failed to save profile'); }
     };
 
@@ -280,7 +280,7 @@ export const IdentityScreen = () => {
                 <View className="mx-6 bg-slate-900/40 p-5 border border-white/5 mb-5" style={{ borderRadius: 48 }}>
                     <View className="flex-row items-center gap-2 mb-3 px-1">
                         <User size={16} color="#22d3ee" />
-                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">Profile</Text>
+                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">{t('hub.profile')}</Text>
                     </View>
 
                     <View className="flex-row items-center justify-center gap-4">
@@ -302,14 +302,14 @@ export const IdentityScreen = () => {
                             <View className="flex-row items-center gap-3 mb-1">
                                 <View className="flex-row items-center gap-1">
                                     <CheckCircle2 size={10} color="#4ade80" />
-                                    <Text className="text-ai-green text-[10px] font-bold uppercase tracking-wider">Verified</Text>
+                                    <Text className="text-ai-green text-[10px] font-bold uppercase tracking-wider">{t('profile.verified')}</Text>
                                 </View>
-                                <Text className="text-slate-500 text-[9px] font-bold">Joined: Jan 2026</Text>
+                                <Text className="text-slate-500 text-[9px] font-bold">{t('profile.joined')}: Jan 2026</Text>
                             </View>
 
                             <View className="flex-row items-center gap-1 bg-slate-800/50 px-2 py-0.5 rounded-full">
                                 <View className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                <Text className="text-green-500 text-[9px] font-bold">Online</Text>
+                                <Text className="text-green-500 text-[9px] font-bold">{t('profile.online')}</Text>
                             </View>
                         </View>
                     </View>
@@ -319,34 +319,34 @@ export const IdentityScreen = () => {
                 <View className="mx-6 bg-slate-900/40 p-5 border border-white/5 mb-5" style={{ borderRadius: 48 }}>
                     <View className="flex-row items-center gap-2 mb-3 px-1">
                         <Activity size={16} color="#22d3ee" />
-                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">Vital Statistics</Text>
+                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">{t('profile.stats')}</Text>
                     </View>
 
                     <View className="flex-row flex-wrap justify-between gap-y-2">
                         {/* Height */}
                         <View className="w-[49%] p-4 bg-yellow-500/10 border border-white/5" style={{ borderRadius: 32 }}>
-                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Height</Text>
+                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{t('stats.height')}</Text>
                             <Text className="text-xl font-black text-yellow-500">{profile.height}</Text>
-                            <Text className="text-[10px] text-slate-500 font-medium">cm</Text>
+                            <Text className="text-[10px] text-slate-500 font-medium">{t('common.cm')}</Text>
                         </View>
 
                         {/* Weight */}
                         <View className="w-[49%] p-4 bg-blue-500/10 border border-white/5" style={{ borderRadius: 32 }}>
-                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Weight</Text>
+                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{t('stats.weight')}</Text>
                             <Text className="text-xl font-black text-blue-500">{profile.weight}</Text>
-                            <Text className="text-[10px] text-slate-500 font-medium">kg</Text>
+                            <Text className="text-[10px] text-slate-500 font-medium">{t('common.kg')}</Text>
                         </View>
 
                         {/* Age */}
                         <View className="w-[49%] p-4 bg-purple-500/10 border border-white/5" style={{ borderRadius: 32 }}>
-                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Age</Text>
+                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{t('stats.age')}</Text>
                             <Text className="text-xl font-black text-purple-500">{profile.age}</Text>
-                            <Text className="text-[10px] text-slate-500 font-medium">years</Text>
+                            <Text className="text-[10px] text-slate-500 font-medium">{t('stats.years')}</Text>
                         </View>
 
                         {/* BMI */}
                         <View className="w-[49%] p-4 bg-emerald-500/10 border border-white/5" style={{ borderRadius: 32 }}>
-                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">BMI</Text>
+                            <Text className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">{t('stats.bmi')}</Text>
                             <Text className="text-xl font-black" style={{ color: bmiCategory.color }}>{bmi}</Text>
                             <Text className="text-[10px] text-slate-500 font-medium">{bmiCategory.label}</Text>
                         </View>
@@ -357,15 +357,17 @@ export const IdentityScreen = () => {
                 <View className="mx-6 bg-slate-900/40 p-4 border border-white/5 mb-5" style={{ borderRadius: 48 }}>
                     <View className="flex-row items-center gap-2 mb-3 px-1">
                         <Target size={16} color="#22d3ee" />
-                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">Daily Target</Text>
+                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">{t('profile.targets')}</Text>
                     </View>
 
                     <View className="flex-row gap-2">
                         {/* Target Value */}
                         <View className="flex-1 p-3 bg-ai-green/10 border border-white/5" style={{ borderRadius: 24 }}>
                             <View className="flex-row items-baseline gap-1">
-                                <Text className="text-2xl font-black text-white">{tdee}</Text>
-                                <Text className="text-ai-green font-bold text-xs">kcal</Text>
+                                <Text className="text-2xl font-black text-white">
+                                    {profile.dailyCalories > 0 ? Math.round(profile.dailyCalories) : tdee}
+                                </Text>
+                                <Text className="text-ai-green font-bold text-xs">{t('common.kcal')}</Text>
                             </View>
                         </View>
 
@@ -395,7 +397,7 @@ export const IdentityScreen = () => {
                     <View className="flex-row items-center justify-between mb-4">
                         <View className="flex-row items-center gap-2">
                             <Utensils size={18} color="#a855f7" />
-                            <Text className="text-white font-bold text-sm uppercase tracking-wide">Nutritional Protocols</Text>
+                            <Text className="text-white font-bold text-sm uppercase tracking-wide">{t('profile.protocols')}</Text>
                         </View>
                         <TouchableOpacity onPress={() => setIsEditingProtocols(true)}>
                             <Edit2 size={16} color="#64748b" />
@@ -404,7 +406,7 @@ export const IdentityScreen = () => {
 
                     <View className="flex-row gap-3">
                         <View className="flex-1">
-                            <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Restrictions</Text>
+                            <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">{t('profile.restrictions')}</Text>
                             {profile.dietaryRestrictions && profile.dietaryRestrictions.length > 0 ? (
                                 <View className="flex-row flex-wrap gap-1">
                                     {profile.dietaryRestrictions.map((r, i) => (
@@ -414,11 +416,11 @@ export const IdentityScreen = () => {
                                     ))}
                                 </View>
                             ) : (
-                                <Text className="text-slate-500 text-[10px] italic">None</Text>
+                                <Text className="text-slate-500 text-[10px] italic">{t('profile.none')}</Text>
                             )}
                         </View>
                         <View className="flex-1">
-                            <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Allergies</Text>
+                            <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">{t('profile.allergies')}</Text>
                             {profile.allergies && profile.allergies.length > 0 ? (
                                 <View className="flex-row flex-wrap gap-1">
                                     {profile.allergies.map((a, i) => (
@@ -428,7 +430,7 @@ export const IdentityScreen = () => {
                                     ))}
                                 </View>
                             ) : (
-                                <Text className="text-slate-500 text-[10px] italic">None</Text>
+                                <Text className="text-slate-500 text-[10px] italic">{t('profile.none')}</Text>
                             )}
                         </View>
                     </View>

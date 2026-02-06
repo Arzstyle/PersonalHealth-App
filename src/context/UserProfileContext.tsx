@@ -37,6 +37,8 @@ interface UserProfileContextType {
     setProfile: (profile: UserProfile) => void;
     setGuestProfile: () => void;
     updateProfile: (updates: Partial<UserProfile>) => void;
+    syncAuthProfile: (user: any) => Promise<void>;
+    hasValidProfile: () => boolean;
     isLoaded: boolean;
 }
 
@@ -90,8 +92,31 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         await setProfile(newProfile);
     };
 
+    const syncAuthProfile = async (user: any) => {
+        if (!user) return;
+
+        try {
+            const updates: Partial<UserProfile> = {};
+            if (user.displayName) updates.name = user.displayName;
+            // Add other logical syncs if needed
+
+            if (Object.keys(updates).length > 0) {
+                // Only update if differ to avoid loops? 
+                // For now just trust updateProfile handles state 
+                console.log('[UserProfile] Syncing with Auth data');
+                await updateProfile(updates);
+            }
+        } catch (e) {
+            console.error('Failed to sync auth profile:', e);
+        }
+    };
+
+    const hasValidProfile = () => {
+        return !profile.isGuest && profile.height > 0 && profile.weight > 0;
+    };
+
     return (
-        <UserProfileContext.Provider value={{ profile, setProfile, setGuestProfile, updateProfile, isLoaded }}>
+        <UserProfileContext.Provider value={{ profile, setProfile, setGuestProfile, updateProfile, isLoaded, syncAuthProfile, hasValidProfile }}>
             {children}
         </UserProfileContext.Provider>
     );
@@ -104,3 +129,4 @@ export const useUserProfile = () => {
     }
     return context;
 };
+

@@ -366,6 +366,10 @@ const generateSmartMealPlan = (targetCalories: number, goal: string): MealPlan =
 // Generate AI Content (for food scanning)
 export const generateAIContent = async (prompt: string): Promise<{ success: boolean; data: string; error?: string }> => {
     try {
+        // Extract food name from prompt
+        const foodMatch = prompt.match(/\"([^\"]+)\"/);
+        const foodName = foodMatch ? foodMatch[1] : prompt.replace('Identify the food item:', '').trim();
+
         const response = await fetch(GROQ_API_URL, {
             method: 'POST',
             headers: {
@@ -377,11 +381,20 @@ export const generateAIContent = async (prompt: string): Promise<{ success: bool
                 messages: [
                     {
                         role: 'system',
-                        content: 'Kamu adalah AI nutrition analyzer. Berikan analisis nutrisi makanan dalam format JSON array.'
+                        content: `Kamu adalah AI nutrition analyzer. Tugasmu mencari makanan berdasarkan keyword.
+
+RULES:
+1. Berikan 5-8 makanan yang cocok dengan keyword pencarian
+2. Gunakan nama makanan yang PROPER dan NORMAL (contoh: "Nasi Putih", "Ayam Goreng", "Telur Rebus")
+3. JANGAN gunakan nama aneh atau istilah asing
+4. Semua nilai nutrisi per 100 gram
+
+OUTPUT FORMAT (JSON ARRAY ONLY, NO MARKDOWN):
+[{"name":"Nasi Putih","calories":175,"protein":3,"carbs":40,"fat":0.3},{"name":"Ayam Goreng","calories":260,"protein":27,"carbs":0,"fat":16}]`
                     },
-                    { role: 'user', content: prompt }
+                    { role: 'user', content: `Cari makanan dengan keyword: "${foodName}". Berikan hasil dalam JSON array.` }
                 ],
-                temperature: 0.5,
+                temperature: 0.3,
                 max_tokens: 1000,
             }),
         });
@@ -393,7 +406,24 @@ export const generateAIContent = async (prompt: string): Promise<{ success: bool
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || '[]';
 
-        return { success: true, data: content };
+        // Try to extract JSON from response
+        try {
+            // Try to find JSON array in response
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                // Validate it's valid JSON
+                JSON.parse(jsonMatch[0]);
+                return { success: true, data: jsonMatch[0] };
+            }
+
+            // Try parsing entire content
+            JSON.parse(content);
+            return { success: true, data: content };
+        } catch (parseError) {
+            console.error('[AI] Failed to parse response:', content);
+            // Return empty array as fallback
+            return { success: true, data: '[]' };
+        }
     } catch (error: any) {
         console.error('[AI] generateAIContent error:', error);
         return { success: false, data: '[]', error: error.message };

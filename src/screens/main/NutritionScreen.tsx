@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, Animated, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Animated, Image, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
     Calendar as CalendarIcon,
@@ -31,11 +31,21 @@ import {
     Drumstick,
     Beef,
     Moon,
+    Search,
+    X,
+    Check,
+    Coffee,
+    Sun,
+    Sunset,
+    Cookie,
+    Edit,
+    Trash2,
 } from 'lucide-react-native';
 import nutritionData from '../../data/nutrition.json';
 import { generateMealPlanAI } from '../../services/ai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserProfile } from '../../context/UserProfileContext';
+import { useUI } from '../../context/UIContext';
 
 // Types
 interface Meal {
@@ -86,6 +96,7 @@ const { width } = Dimensions.get('window');
 export const NutritionScreen = () => {
     const navigation = useNavigation();
     const { profile } = useUserProfile();
+    const { t, language } = useUI();
 
     // Get gender-based calorie limits with fallback
     const gender: Gender = profile.gender === 'female' ? 'female' : 'male';
@@ -96,13 +107,39 @@ export const NutritionScreen = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [dietGoal, setDietGoal] = useState<DietGoal>('standard');
 
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showGuideModal, setShowGuideModal] = useState(false);
+    const [showActionModal, setShowActionModal] = useState(false);
+    const [selectedFoodAction, setSelectedFoodAction] = useState<{ mealType: string; food: Meal } | null>(null);
+    const [selectedMealType, setSelectedMealType] = useState<string>('breakfast');
+
     // Get current calorie limit based on gender and goal
-    const currentLimit = CALORIE_LIMITS[gender][dietGoal];
+    // Get current calorie limit based on gender and goal
+    const currentLimit = useMemo(() => {
+        // Prioritize profile calculated calories if available and not guest default (2000)
+        // Assuming 2000 is default guest, if it differs significantly or is set by calculations
+        if (profile.dailyCalories && profile.dailyCalories !== 2000) {
+            return {
+                min: Math.round(profile.dailyCalories - 200),
+                max: Math.round(profile.dailyCalories + 200),
+                label: `${Math.round(profile.dailyCalories)}`,
+                desc: language === 'id' ? "Target harian personal" : "Personal daily target"
+            };
+        }
+        return CALORIE_LIMITS[gender][dietGoal];
+    }, [profile.dailyCalories, gender, dietGoal, language]);
 
     // Animation Values
     const spinValue = useRef(new Animated.Value(0)).current;
 
-    // Load Data
+    // Load Data on Focus
+    useFocusEffect(
+        useCallback(() => {
+            loadDietPlan();
+        }, [])
+    );
+
+    // Initial Load
     useEffect(() => {
         loadDietPlan();
     }, []);
@@ -146,7 +183,7 @@ export const NutritionScreen = () => {
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString('id-ID', {
+        return date.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
@@ -176,10 +213,10 @@ export const NutritionScreen = () => {
                     snacks: plan.snack ? plan.snack.map((m: any, i: number) => ({ ...m, id: Date.now() + 300 + i, completed: false })) : [],
                 };
                 await saveDietPlan(newPlan);
-                Alert.alert("Success", "Meal plan generated successfully!");
+                Alert.alert(t('common.success'), t('meal.success'));
             }
         } catch (e) {
-            Alert.alert("Error", "Failed to generate meal plan");
+            Alert.alert(t('common.error'), t('meal.error'));
         } finally {
             setIsGenerating(false);
             spinValue.setValue(0);
@@ -193,20 +230,48 @@ export const NutritionScreen = () => {
         const newData = { ...mealsData, [mealType]: updatedCategory };
         saveDietPlan(newData);
     };
+    // Action Modal Handlers
+    const openActionModal = (mealType: string, food: Meal) => {
+        setSelectedFoodAction({ mealType, food });
+        setShowActionModal(true);
+    };
 
-    const removeMeal = (mealType: string, id: number) => {
+    const handleUpdateMeal = () => {
+        if (!selectedFoodAction) return;
+        setShowActionModal(false);
+        (navigation as any).navigate('Search', {
+            mealType: selectedFoodAction.mealType,
+            isReplacing: true,
+            replaceId: selectedFoodAction.food.id
+        });
+    };
+
+    const handleDeleteMeal = () => {
+        if (!selectedFoodAction) return;
+        removeMeal(selectedFoodAction.mealType, selectedFoodAction.food.id);
+        setShowActionModal(false);
+    };
+
+    // Remove meal from plan
+    const removeMeal = async (mealType: string, id: number) => {
         const updatedCategory = mealsData[mealType].filter(meal => meal.id !== id);
         const newData = { ...mealsData, [mealType]: updatedCategory };
         saveDietPlan(newData);
     };
 
+    // Open Add Modal for specific meal type
+    const openAddModal = (mealType: string) => {
+        setSelectedMealType(mealType);
+        setShowAddModal(true);
+    };
+
     // Theme Helpers
     const getCategoryStyle = (type: string) => {
         switch (type) {
-            case 'breakfast': return { icon: Zap, color: 'text-amber-500', bg: 'bg-amber-100', border: 'border-amber-200', label: 'Sarapan' };
-            case 'lunch': return { icon: BatteryMedium, color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'border-emerald-200', label: 'Makan Siang' };
-            case 'dinner': return { icon: Moon, color: 'text-indigo-600', bg: 'bg-indigo-100', border: 'border-indigo-200', label: 'Makan Malam' };
-            default: return { icon: Disc, color: 'text-pink-600', bg: 'bg-pink-100', border: 'border-pink-200', label: 'Camilan' };
+            case 'breakfast': return { icon: Zap, color: 'text-amber-500', bg: 'bg-amber-100', border: 'border-amber-200', label: t('meal.breakfast') };
+            case 'lunch': return { icon: BatteryMedium, color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'border-emerald-200', label: t('meal.lunch') };
+            case 'dinner': return { icon: Moon, color: 'text-indigo-600', bg: 'bg-indigo-100', border: 'border-indigo-200', label: t('meal.dinner') };
+            default: return { icon: Disc, color: 'text-pink-600', bg: 'bg-pink-100', border: 'border-pink-200', label: t('meal.snacks') };
         }
     };
 
@@ -227,9 +292,9 @@ export const NutritionScreen = () => {
     });
 
     const goals = [
-        { id: 'low-cal', label: 'Low Cal', sub: 'Lose fat', color: 'orange' },
-        { id: 'standard', label: 'Standard', sub: 'Maintain', color: 'blue' },
-        { id: 'bulking', label: 'Bulking', sub: 'Build muscle', color: 'emerald' },
+        { id: 'low-cal', label: t('meal.low_cal'), sub: t('meal.lose_fat'), color: 'orange' },
+        { id: 'standard', label: t('meal.standard'), sub: t('meal.maintain'), color: 'blue' },
+        { id: 'bulking', label: t('meal.bulking'), sub: t('meal.build_muscle'), color: 'emerald' },
     ];
 
     return (
@@ -259,8 +324,8 @@ export const NutritionScreen = () => {
                 <View className="px-6 pt-4 mb-6">
                     <View className="flex-row items-center justify-between mb-4">
                         <View>
-                            <Text className="text-4xl font-black text-white">Meal Plan</Text>
-                            <Text className="text-slate-400 font-medium">Rencanakan nutrisimu.</Text>
+                            <Text className="text-4xl font-black text-white">{t('meal.title')}</Text>
+                            <Text className="text-slate-400 font-medium">{t('meal.subtitle')}</Text>
                         </View>
                         <View className="w-12 h-12 bg-cyan-500/10 items-center justify-center border border-cyan-500/30" style={{ borderRadius: 24 }}>
                             <BrainCircuit size={28} color="#22d3ee" />
@@ -289,7 +354,7 @@ export const NutritionScreen = () => {
                             <View className="p-2 bg-orange-500/10" style={{ borderRadius: 20 }}>
                                 <Flame size={20} color="#f97316" fill="#f97316" />
                             </View>
-                            <Text className="text-lg font-bold text-white">Ringkasan</Text>
+                            <Text className="text-lg font-bold text-white">{t('meal.summary')}</Text>
                         </View>
                         <View className="bg-white/5 px-3 py-1 border border-white/5" style={{ borderRadius: 999 }}>
                             <Text className="text-xs font-bold text-slate-400">Target: {currentLimit.label} kcal</Text>
@@ -298,10 +363,10 @@ export const NutritionScreen = () => {
 
                     <View className="flex-row flex-wrap justify-between gap-y-4">
                         {[
-                            { l: 'Kalori', v: totalStats.calories, u: 'kcal', c: '#f97316', bg: 'bg-orange-500/10' },
-                            { l: 'Protein', v: totalStats.protein, u: 'g', c: '#3b82f6', bg: 'bg-blue-500/10' },
-                            { l: 'Karbo', v: totalStats.carbs, u: 'g', c: '#10b981', bg: 'bg-emerald-500/10' },
-                            { l: 'Lemak', v: totalStats.fat, u: 'g', c: '#eab308', bg: 'bg-yellow-500/10' },
+                            { l: t('nutrition.calories'), v: totalStats.calories, u: t('common.kcal'), c: '#f97316', bg: 'bg-orange-500/10' },
+                            { l: t('nutrition.protein'), v: totalStats.protein, u: t('common.g'), c: '#3b82f6', bg: 'bg-blue-500/10' },
+                            { l: t('nutrition.carbs'), v: totalStats.carbs, u: t('common.g'), c: '#10b981', bg: 'bg-emerald-500/10' },
+                            { l: t('nutrition.fat'), v: totalStats.fat, u: t('common.g'), c: '#eab308', bg: 'bg-yellow-500/10' },
                         ].map((stat, i) => (
                             <View key={i} className={`w-[48%] p-4 ${stat.bg} mb-2 border border-white/5`} style={{ borderRadius: 32 }}>
                                 <Text className="text-xs font-bold text-slate-400 uppercase mb-1">{stat.l}</Text>
@@ -314,7 +379,7 @@ export const NutritionScreen = () => {
 
                 {/* Goal Selector */}
                 <View className="mx-6 mb-6">
-                    <Text className="text-white font-bold text-lg mb-4 ml-2">Pilih Target</Text>
+                    <Text className="text-white font-bold text-lg mb-4 ml-2">{t('meal.select_target')}</Text>
                     <View className="flex-row justify-between gap-2">
                         {goals.map((g) => {
                             const isActive = dietGoal === g.id;
@@ -353,15 +418,15 @@ export const NutritionScreen = () => {
                                     <View className="flex-row items-center gap-2 mb-2">
                                         <View className={`px-2 py-1 rounded-full ${isGenerating ? 'bg-orange-500/20' : 'bg-cyan-500/20'}`}>
                                             <Text className={`text-[10px] font-bold ${isGenerating ? 'text-orange-400' : 'text-cyan-400'}`}>
-                                                {isGenerating ? 'PROCESSING...' : 'AI READY'}
+                                                {isGenerating ? t('meal.processing') : t('meal.ai_ready')}
                                             </Text>
                                         </View>
                                     </View>
                                     <Text className="text-xl font-black text-white">
-                                        {isGenerating ? 'Generating...' : 'AI Auto-Generate'}
+                                        {isGenerating ? t('meal.generating') : t('meal.ai_generate')}
                                     </Text>
                                     <Text className="text-xs text-slate-400 mt-1 max-w-[150px]">
-                                        Biarkan AI menyusun menu harian lengkap.
+                                        {t('meal.ai_desc')}
                                     </Text>
                                 </View>
 
@@ -379,10 +444,10 @@ export const NutritionScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Manual Manual Button */}
+                {/* Manual Compose Button */}
                 <View className="mx-6 mb-8">
                     <TouchableOpacity
-                        onPress={() => Alert.alert("Coming Soon", "Fitur manual search akan segera hadir!")}
+                        onPress={() => setShowGuideModal(true)}
                         className="bg-slate-900/60 border border-white/5 p-5 flex-row justify-between items-center"
                         style={{ borderRadius: 40 }}
                     >
@@ -391,9 +456,9 @@ export const NutritionScreen = () => {
                                 <View className="p-1.5 bg-emerald-500/10 rounded-full">
                                     <PenTool size={14} color="#10b981" />
                                 </View>
-                                <Text className="text-emerald-400 font-bold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full">Manual</Text>
+                                <Text className="text-emerald-400 font-bold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full">{t('meal.manual')}</Text>
                             </View>
-                            <Text className="text-lg font-bold text-white">Susun Manual</Text>
+                            <Text className="text-lg font-bold text-white">{t('meal.manual_compose')}</Text>
                         </View>
                         <View className="w-10 h-10 bg-white/5 rounded-full items-center justify-center">
                             <ArrowRight size={20} color="#10b981" />
@@ -422,11 +487,14 @@ export const NutritionScreen = () => {
                                         </View>
                                         <View>
                                             <Text className="font-bold text-lg text-white">{style.label}</Text>
-                                            <Text className="text-xs text-slate-400">{meals.length} Items • {Math.round(totalCal)} kcal</Text>
+                                            <Text className="text-xs text-slate-400">{meals.length} {t('meal.items')} • {Math.round(totalCal)} {t('common.kcal')}</Text>
                                         </View>
                                     </View>
-                                    <TouchableOpacity className="p-3 bg-white/5 rounded-full">
-                                        <Plus size={20} color="#94a3b8" />
+                                    <TouchableOpacity
+                                        onPress={() => openAddModal(mealType)}
+                                        className="p-3 bg-cyan-500/20 rounded-full border border-cyan-500/30"
+                                    >
+                                        <Plus size={20} color="#22d3ee" />
                                     </TouchableOpacity>
                                 </View>
 
@@ -468,7 +536,7 @@ export const NutritionScreen = () => {
                                                         </View>
                                                     </View>
 
-                                                    <TouchableOpacity onPress={() => removeMeal(mealType, food.id)}>
+                                                    <TouchableOpacity onPress={() => openActionModal(mealType, food)}>
                                                         <MoreHorizontal size={20} color="#475569" />
                                                     </TouchableOpacity>
                                                 </View>
@@ -477,7 +545,7 @@ export const NutritionScreen = () => {
                                     </View>
                                 ) : (
                                     <View className="h-28 border-2 border-dashed border-white/10 items-center justify-center bg-white/5" style={{ borderRadius: 40 }}>
-                                        <Text className="text-slate-500 text-xs text-center">Belum ada makanan.{'\n'}Klik AI Generate untuk isi otomatis.</Text>
+                                        <Text className="text-slate-500 text-xs text-center">{t('meal.no_food')}{'\n'}{t('meal.click_ai')}</Text>
                                     </View>
                                 )}
                             </View>
@@ -486,6 +554,238 @@ export const NutritionScreen = () => {
                 </View>
 
             </ScrollView>
+
+            {/* Add Food Modal - First Popup */}
+            <Modal
+                visible={showAddModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowAddModal(false)}
+            >
+                <View className="flex-1 bg-black/80 justify-center items-center px-6">
+                    <View className="bg-[#0a101f] border border-cyan-500/30 rounded-3xl p-6 w-full max-w-[340px] shadow-2xl">
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between mb-6">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-12 h-12 bg-cyan-500/20 rounded-2xl items-center justify-center border border-cyan-500/30">
+                                    {selectedMealType === 'breakfast' && <Coffee size={24} color="#22d3ee" />}
+                                    {selectedMealType === 'lunch' && <Sun size={24} color="#22d3ee" />}
+                                    {selectedMealType === 'dinner' && <Sunset size={24} color="#22d3ee" />}
+                                    {selectedMealType === 'snacks' && <Cookie size={24} color="#22d3ee" />}
+                                </View>
+                                <View>
+                                    <Text className="text-white font-black text-lg">{t('nutrition.add_meal')}</Text>
+                                    <Text className="text-cyan-400 text-xs font-bold uppercase tracking-widest">
+                                        {selectedMealType === 'breakfast' && t('meal.breakfast')}
+                                        {selectedMealType === 'lunch' && t('meal.lunch')}
+                                        {selectedMealType === 'dinner' && t('meal.dinner')}
+                                        {selectedMealType === 'snacks' && t('meal.snacks')}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowAddModal(false)}
+                                className="p-2 bg-white/10 rounded-full"
+                            >
+                                <X size={20} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Question */}
+                        <View className="bg-slate-800/50 p-5 rounded-2xl border border-white/5 mb-6">
+                            <Text className="text-white font-bold text-center text-base mb-2">
+                                {language === 'id' ? 'Ingin menyusun secara manual?' : 'Want to compose manually?'}
+                            </Text>
+                            <Text className="text-slate-400 text-xs text-center">
+                                {language === 'id'
+                                    ? 'Cari makanan favoritmu dan tambahkan ke rencana makan.'
+                                    : 'Search your favorite food and add it to your meal plan.'}
+                            </Text>
+                        </View>
+
+                        {/* Action Button */}
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowAddModal(false);
+                                // Navigate to Search screen with mealType
+                                (navigation as any).navigate('Search', { mealType: selectedMealType });
+                            }}
+                            className="bg-cyan-600 py-4 rounded-2xl flex-row items-center justify-center gap-3 shadow-lg shadow-cyan-500/30"
+                        >
+                            <Search size={20} color="white" />
+                            <Text className="text-white font-black text-sm uppercase tracking-widest">
+                                {language === 'id' ? 'Cari Makanan' : 'Search Food'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Guide Modal for Manual Compose */}
+            <Modal
+                visible={showGuideModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowGuideModal(false)}
+            >
+                <View className="flex-1 bg-black/80 justify-center items-center px-6">
+                    <View className="bg-[#0a101f] border border-emerald-500/30 rounded-3xl p-6 w-full max-w-[340px] shadow-2xl">
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between mb-6">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-12 h-12 bg-emerald-500/20 rounded-2xl items-center justify-center border border-emerald-500/30">
+                                    <PenTool size={24} color="#10b981" />
+                                </View>
+                                <View>
+                                    <Text className="text-white font-black text-lg">{t('meal.manual_compose')}</Text>
+                                    <Text className="text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                                        {language === 'id' ? 'PETUNJUK' : 'GUIDE'}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowGuideModal(false)}
+                                className="p-2 bg-white/10 rounded-full"
+                            >
+                                <X size={20} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Instruction Content */}
+                        <View className="bg-slate-800/50 p-5 rounded-2xl border border-white/5 mb-6">
+                            <Text className="text-white font-bold text-center text-base mb-3">
+                                {language === 'id'
+                                    ? 'Cara Menyusun Rencana Makan Manual'
+                                    : 'How to Compose Meal Plan Manually'}
+                            </Text>
+                            <Text className="text-slate-400 text-sm text-center leading-6">
+                                {language === 'id'
+                                    ? 'Untuk menambahkan makanan secara manual, tekan tombol + di samping setiap kategori makanan (Sarapan, Makan Siang, Makan Malam, atau Camilan). Kemudian cari dan pilih makanan yang Anda inginkan.'
+                                    : 'To add food manually, tap the + button next to each meal category (Breakfast, Lunch, Dinner, or Snacks). Then search and select the food you want.'}
+                            </Text>
+                        </View>
+
+                        {/* Steps */}
+                        <View className="gap-3 mb-6">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 bg-cyan-500/20 rounded-full items-center justify-center border border-cyan-500/30">
+                                    <Text className="text-cyan-400 font-black">1</Text>
+                                </View>
+                                <Text className="text-slate-300 text-sm flex-1">
+                                    {language === 'id' ? 'Tekan tombol + biru di samping kategori' : 'Tap the blue + button next to category'}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 bg-cyan-500/20 rounded-full items-center justify-center border border-cyan-500/30">
+                                    <Text className="text-cyan-400 font-black">2</Text>
+                                </View>
+                                <Text className="text-slate-300 text-sm flex-1">
+                                    {language === 'id' ? 'Cari makanan yang Anda inginkan' : 'Search for the food you want'}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 bg-cyan-500/20 rounded-full items-center justify-center border border-cyan-500/30">
+                                    <Text className="text-cyan-400 font-black">3</Text>
+                                </View>
+                                <Text className="text-slate-300 text-sm flex-1">
+                                    {language === 'id' ? 'Tekan + untuk menambahkan ke rencana' : 'Tap + to add to your plan'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            onPress={() => setShowGuideModal(false)}
+                            className="bg-emerald-600 py-4 rounded-2xl flex-row items-center justify-center gap-3 shadow-lg shadow-emerald-500/30"
+                        >
+                            <Check size={20} color="white" />
+                            <Text className="text-white font-black text-sm uppercase tracking-widest">
+                                {language === 'id' ? 'Mengerti' : 'Got It'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Action Modal for Update/Delete */}
+            <Modal
+                visible={showActionModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowActionModal(false)}
+            >
+                <View className="flex-1 bg-black/80 justify-center items-center px-6">
+                    <View className="bg-[#0a101f] border border-slate-700/50 rounded-3xl p-6 w-full max-w-[340px] shadow-2xl">
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between mb-6">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-12 h-12 bg-slate-800 rounded-2xl items-center justify-center border border-white/10">
+                                    <Utensils size={24} color="#94a3b8" />
+                                </View>
+                                <View>
+                                    <Text className="text-white font-black text-lg">
+                                        {language === 'id' ? 'Atur Makanan' : 'Manage Meal'}
+                                    </Text>
+                                    <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest max-w-[200px]" numberOfLines={1}>
+                                        {selectedFoodAction?.food.name}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowActionModal(false)}
+                                className="p-2 bg-white/10 rounded-full"
+                            >
+                                <X size={20} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Actions */}
+                        <View className="gap-3">
+                            <TouchableOpacity
+                                onPress={handleUpdateMeal}
+                                className="bg-cyan-600/10 border border-cyan-500/30 p-4 rounded-2xl flex-row items-center justify-between group active:bg-cyan-600/20"
+                            >
+                                <View className="flex-row items-center gap-3">
+                                    <View className="p-2 bg-cyan-500/20 rounded-xl">
+                                        <Edit size={20} color="#22d3ee" />
+                                    </View>
+                                    <View>
+                                        <Text className="text-white font-bold text-base">
+                                            {language === 'id' ? 'Ganti Makanan' : 'Replace Meal'}
+                                        </Text>
+                                        <Text className="text-slate-400 text-xs">
+                                            {language === 'id' ? 'Cari pengganti baru' : 'Find a substitute'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <ArrowRight size={20} color="#22d3ee" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={handleDeleteMeal}
+                                className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl flex-row items-center justify-between active:bg-red-500/20"
+                            >
+                                <View className="flex-row items-center gap-3">
+                                    <View className="p-2 bg-red-500/20 rounded-xl">
+                                        <Trash2 size={20} color="#f87171" />
+                                    </View>
+                                    <View>
+                                        <Text className="text-white font-bold text-base">
+                                            {language === 'id' ? 'Hapus Makanan' : 'Delete Meal'}
+                                        </Text>
+                                        <Text className="text-slate-400 text-xs">
+                                            {language === 'id' ? 'Hapus dari daftar' : 'Remove from list'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View className="w-8 h-8 bg-red-500/10 rounded-full items-center justify-center">
+                                    <X size={16} color="#f87171" />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };

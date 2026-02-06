@@ -10,6 +10,8 @@ import { BodyMetricsScreen } from '../screens/onboarding/BodyMetricsScreen';
 import { MetabolicProfileScreen } from '../screens/onboarding/MetabolicProfileScreen';
 import { MainTabNavigator } from './MainTabNavigator';
 
+import { WelcomeBackScreen } from '../screens/onboarding/WelcomeBackScreen';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppNavigator = () => {
@@ -25,6 +27,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="WelcomeIntro" component={WelcomeIntro} />
                 <Stack.Screen name="OnboardingSteps" component={OnboardingSteps} />
                 <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="WelcomeBack" component={WelcomeBackScreen} />
                 <Stack.Screen name="BodyMetrics" component={BodyMetricsScreen} />
                 <Stack.Screen name="MetabolicProfile" component={MetabolicProfileScreen} />
                 <Stack.Screen name="Main" component={MainTabNavigator} />
